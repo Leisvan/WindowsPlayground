@@ -1,0 +1,192 @@
+﻿<Page
+    x:Class="GoogleBooks.Views.MainPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:GoogleBooks.Views"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:winui="using:Microsoft.UI.Xaml.Controls"
+    xmlns:toolkit="using:Microsoft.Toolkit.Uwp.UI.Controls"
+    
+    xmlns:vm="using:GoogleBooks.ViewModels"
+    xmlns:converters="using:GoogleBooks.ViewModels.Converters"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    winui:BackdropMaterial.ApplyToRootOrPageBackground="True">
+    <Page.Resources>
+        <converters:InvertedBoolealToVisibilityConverter x:Key="InvertedBoolealToVisibilityConverter"/>
+        <converters:NumberToValidRatingPlaceholderValueConverter x:Key="NumberToValidRatingPlaceholderValueConverter"/>
+        <converters:DownloadStateToMessageConverter x:Key="DownloadStateToMessageConverter"/>
+        <converters:DownloadStateToVisibilityConverter x:Key="DownloadingStateToVisibilityConverter">
+            <converters:DownloadStateToVisibilityConverter.State>
+                <vm:DownloadState>Downloading</vm:DownloadState>
+            </converters:DownloadStateToVisibilityConverter.State>
+        </converters:DownloadStateToVisibilityConverter>
+        <converters:DownloadStateToVisibilityConverter x:Key="FinishedStateToVisibilityConverter">
+            <converters:DownloadStateToVisibilityConverter.State>
+                <vm:DownloadState>Finished</vm:DownloadState>
+            </converters:DownloadStateToVisibilityConverter.State>
+        </converters:DownloadStateToVisibilityConverter>
+    </Page.Resources>
+    <Grid x:Name="ContentArea">
+        <Grid.RowDefinitions>
+            <!--App Title bar-->
+            <RowDefinition Height="32" />
+            <!--Search and tools-->
+            <RowDefinition Height="Auto" />
+            <!--Content-->
+            <RowDefinition Height="*" />
+            <!--Status bar-->
+            <RowDefinition Height="32" />
+        </Grid.RowDefinitions>
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition/>
+                <ColumnDefinition/>
+                <ColumnDefinition/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <AutoSuggestBox x:Uid="Main-Searchbox" x:Name="searchBox" 
+                            Grid.Column="1" MinWidth="120" QueryIcon="Find"
+                            Text="{Binding SearchTerm, Mode=TwoWay, UpdateSourceTrigger=Explicit}"
+                            QuerySubmitted="SearchBoxQuerySubmitted" KeyDown="SearchBoxKeyDown"/>
+            <winui:DropDownButton x:Uid="Main-SortButton" Grid.Column="2" VerticalAlignment="Stretch" Margin="5,0,0,0">
+                <winui:DropDownButton.Content>
+                    <FontIcon Glyph=""/>
+                </winui:DropDownButton.Content>
+                <winui:DropDownButton.Flyout>
+                    <MenuFlyout Placement="Bottom" >
+                        <MenuFlyoutItem x:Uid="Main-SortOption-Title" Command="{Binding SortCommand}">
+                            <MenuFlyoutItem.CommandParameter>
+                                <vm:SortCriteria>Title</vm:SortCriteria>
+                            </MenuFlyoutItem.CommandParameter>
+                        </MenuFlyoutItem>
+                        <MenuFlyoutItem x:Uid="Main-SortOption-Author" Command="{Binding SortCommand}">
+                            <MenuFlyoutItem.CommandParameter>
+                                <vm:SortCriteria>Author</vm:SortCriteria>
+                            </MenuFlyoutItem.CommandParameter>
+                        </MenuFlyoutItem>
+                    </MenuFlyout>
+                </winui:DropDownButton.Flyout>
+            </winui:DropDownButton>
+            <winui:DropDownButton x:Uid="Main-DownloadButton" Grid.Column="3" VerticalAlignment="Stretch" Margin="5,0,15,0">
+                <winui:DropDownButton.Content>
+                    <FontIcon Glyph=""/>
+                </winui:DropDownButton.Content>
+                <winui:DropDownButton.Flyout>
+                    <Flyout Placement="BottomEdgeAlignedRight">
+                        <Grid Height="480" Width="320">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition/>
+                            </Grid.RowDefinitions>
+                            <TextBlock x:Uid="Main-Download-Title" Style="{StaticResource SubtitleItemTextBlock}" FontWeight="Bold" TextAlignment="Center" Margin="0,0,0,10"/>
+                            <Grid Grid.Row="1">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <AutoSuggestBox x:Uid="Main-Download-Addressbox"
+                                                Text="{Binding DownloadManager.UserUrl, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                <Button Grid.Column="1" Margin="2,0"
+                                        Command="{Binding DownloadManager.DownloadCommand}">
+                                    <FontIcon Glyph=""/>
+                                </Button>
+                            </Grid>
+                            <Grid Grid.Row="2" Margin="0,20,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition/>
+                                    <ColumnDefinition/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock x:Uid="Main-Downloads-ListTitle" Style="{StaticResource SubtitleItemTextBlock}" TextAlignment="Left" VerticalAlignment="Center"/>
+                                <HyperlinkButton Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" Padding="10,0"
+                                             Command="{Binding DownloadManager.ClearAllCommand}">
+                                    <TextBlock x:Uid="Main-Downloads-ClearAllButton"/>
+                                </HyperlinkButton>
+                            </Grid>
+                            
+                            <ListView Grid.Row="3" ItemsSource="{Binding DownloadManager.ItemsView}" SelectionMode="None">
+                                <ListView.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:DownloadItemViewModel">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel MaxWidth="320" Margin="0,5">
+                                                <TextBlock Text="{x:Bind Url, Mode=OneWay}" 
+                                                           Style="{StaticResource TitleItemTextBlock}"
+                                                           Margin="2"/>
+                                                <TextBlock Text="{x:Bind State, Mode=OneWay, Converter={StaticResource DownloadStateToMessageConverter}}" 
+                                                           Style="{StaticResource CaptionItemTextBlock}"
+                                                           Margin="2"/>
+                                            </StackPanel>
+                                            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                                <Button Command="{x:Bind CancelCommand}" 
+                                                        Visibility="{x:Bind State, Mode=OneWay, Converter={StaticResource DownloadingStateToVisibilityConverter}}">
+                                                    <FontIcon Glyph=""/>
+                                                </Button>
+                                                <Button Command="{x:Bind OpenCommand}" 
+                                                        Visibility="{x:Bind State, Mode=OneWay, Converter={StaticResource FinishedStateToVisibilityConverter}}">
+                                                    <FontIcon Glyph=""/>
+                                                </Button>
+                                            </StackPanel>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ListView.ItemTemplate>
+                            </ListView>
+                        </Grid>
+                    </Flyout>
+                </winui:DropDownButton.Flyout>
+            </winui:DropDownButton>
+        </Grid>
+        <Grid>
+            <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <TextBlock x:Uid="Main-Title" Text="APP NAME" Style="{StaticResource CaptionTextBlockStyle}" Opacity=".75"/>
+            </StackPanel>
+        </Grid>
+        <Grid Grid.Row="2" CornerRadius="8" Margin="5" BorderThickness="1"
+              Background="{ThemeResource DeepBackgroundBrush}"
+              BorderBrush="{ThemeResource PanelBorderBrush}">
+            <toolkit:AdaptiveGridView DesiredWidth="280" ItemHeight="300" 
+                                      ItemsSource="{Binding SearchResults}">
+                <toolkit:AdaptiveGridView.ItemContainerStyle>
+                    <Style TargetType="GridViewItem" >
+                        <Setter Property="Margin" Value="10"/>
+                    </Style>
+                </toolkit:AdaptiveGridView.ItemContainerStyle>
+                <toolkit:AdaptiveGridView.ItemTemplate>
+                    <DataTemplate x:DataType="vm:BookViewModel">
+                        <Grid CornerRadius="5" BorderThickness="1"
+                              Background="{ThemeResource DefaultBackgroundBrush}"
+                              BorderBrush="{ThemeResource PanelBorderBrush}"
+                              Loaded="ItemLoaded" Tapped="ItemTapped">
+                            <Grid.RowDefinitions>
+                                <RowDefinition/>
+                                <RowDefinition Height="120"/>
+                            </Grid.RowDefinitions>
+                            <Border Height="128" Margin="15" BorderThickness="1" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                    BorderBrush="{ThemeResource PanelBorderBrush}">
+                                <Image Source="{Binding Thumbnail, Mode=OneWay}"/>
+                            </Border>
+                            <StackPanel Grid.Row="1" Orientation="Vertical" Spacing="2" Margin="25,0,25,25" VerticalAlignment="Bottom">
+                                <TextBlock Text="{x:Bind Title}" Style="{StaticResource TitleItemTextBlock}" />
+                                <TextBlock Text="{x:Bind AuthorsFormmated}" Style="{StaticResource SubtitleItemTextBlock}"/>
+                                <TextBlock Text="{x:Bind SubtitleFormatted}" Style="{StaticResource CaptionItemTextBlock}"/>
+                                <winui:RatingControl IsReadOnly="True" HorizontalAlignment="Left"
+                                                     InitialSetValue="0"
+                                                     PlaceholderValue="{x:Bind AverageRating, Converter={StaticResource NumberToValidRatingPlaceholderValueConverter}}"
+                                                     Caption="{x:Bind RatingsCount}"/>
+                            </StackPanel>
+                        </Grid>
+                    </DataTemplate>
+                </toolkit:AdaptiveGridView.ItemTemplate>
+            </toolkit:AdaptiveGridView>
+            <winui:ProgressBar ShowError="{Binding Loading.Error, Mode=OneWay}" 
+                               IsIndeterminate="{Binding Loading.Busy, Mode=OneWay}" 
+                               Visibility="{Binding Loading.Idle, Converter={StaticResource InvertedBoolealToVisibilityConverter}}"
+                               VerticalAlignment="Top" Margin="5,0"/>
+        </Grid>
+    </Grid>
+</Page>
